@@ -1,13 +1,51 @@
+const bcrypt = require("bcryptjs");
+
 const User = require("../models/user");
 
 exports.login = async (req, res, next) => {
   try {
-    const user = await User.create(req.body);
-    console.log("added");
+    const user = await User.findOne({ username: req.body.username });
+    if (user) {
+      const validPwd = await bcrypt.compare(req.body.password, user.password);
+      if (!validPwd) {
+        res.json({
+          message: "Invalid password.",
+          found: false,
+        });
+      } else {
+        res.json({
+          message: "Found.",
+          found: true,
+        });
+      }
+    } else {
+      res.json({
+        message: "No such user exists.",
+        found: false,
+      });
+    }
     res.send();
   } catch (err) {
     console.log(err);
     res.send();
+  }
+};
+
+exports.signup = async (req, res, next) => {
+  try {
+    const password = await bcrypt.hash(req.body.password, 12);
+    const user = await User.create({
+      username: req.body.username,
+      password: password,
+    });
+    console.log("Created new user.");
+    res.json({
+      message: "User created successfully",
+    });
+  } catch (err) {
+    res.json({
+      message: "User already exists.",
+    });
   }
 };
 
