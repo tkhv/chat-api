@@ -1,4 +1,6 @@
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const User = require("../models/user");
 
@@ -7,15 +9,25 @@ exports.login = async (req, res, next) => {
     const user = await User.findOne({ username: req.body.username });
     if (user) {
       const validPwd = await bcrypt.compare(req.body.password, user.password);
-      if (!validPwd) {
-        res.json({
-          message: "Invalid password.",
-          found: false,
-        });
-      } else {
+      if (validPwd) {
+        const token = jwt.sign(
+          {
+            username: req.body.username,
+            userID: user._id,
+          },
+          process.env.client_secret,
+          { expiresIn: "1h" }
+        );
         res.json({
           message: "Found.",
           found: true,
+          token: token,
+          userID: user._id,
+        });
+      } else {
+        res.json({
+          message: "Invalid password.",
+          found: false,
         });
       }
     } else {
